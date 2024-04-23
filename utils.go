@@ -164,6 +164,13 @@ func getsFinalTarget(path string) (string, bool) {
 
 }
 
+func isFile(path string) bool {
+
+	info, _ := attemptStat(path)
+	return info != nil && !info.IsDir()
+
+}
+
 // isReadable checks if a file at the specified path is readable by attempting
 // to obtain its file information using the attemptStat function. If the file
 // information is successfully obtained, it then attempts to open the file using

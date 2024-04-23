@@ -7,14 +7,24 @@ import (
 // worker represents a worker that performs operations on files and directories.
 type worker struct {
 	RootPath string
+	single   bool
 	setter   Sets
 }
 
-// newWorker creates a new instance of the worker struct with the provided startPath and Sets.
+// newPathWorker creates a new instance of the worker struct with the provided startPath and Sets.
 // It returns a pointer to the worker.
-func newWorker(startPath string, s Sets) *worker {
+func newPathWorker(startPath string, s Sets) *worker {
 	return &worker{
 		RootPath: startPath,
+		single:   false,
+		setter:   s,
+	}
+}
+
+func newFileWorker(path string, s Sets) *worker {
+	return &worker{
+		RootPath: path,
+		single:   true,
 		setter:   s,
 	}
 }
@@ -30,7 +40,11 @@ func (w *worker) validate() bool {
 		return false
 	}
 
-	return isReadable(pathAbsUnsafe(w.RootPath))
+	if w.single {
+		return isFile(w.RootPath) && isReadable(pathAbsUnsafe(w.RootPath))
+	} else {
+		return isReadable(pathAbsUnsafe(w.RootPath))
+	}
 
 }
 

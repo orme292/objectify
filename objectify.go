@@ -9,13 +9,29 @@ import (
 	"path/filepath"
 )
 
-// Objectify is a function that takes a rootPath and a Sets struct as parameters.
+// Path is a function that takes a rootPath and a Sets struct as parameters.
 // It creates a worker instance and runs it using the run function to collect file information.
 // It returns a slice of FileObj structs and an error if any.
 // The Sets struct is used to specify which fields of the FileObj struct need to be populated.
-func Objectify(rootPath string, s Sets) (files Files, err error) {
+func Path(rootPath string, s Sets) (files Files, err error) {
 
-	return run(newWorker(rootPath, s))
+	return run(newPathWorker(rootPath, s))
+
+}
+
+// File is a function that accepts a path and a Sets struct as parameters.
+// It creates a worker instance and runs it using the run function to collect file information.
+// It returns a slice of FileObj structs and an error if any. The returned slice should contain
+// a single FileObj, if not, nil and an error is returned.
+// As long as the files slice contains a single FileObj, it is returned.
+func File(path string, s Sets) (file *FileObj, err error) {
+
+	files, err := run(newFileWorker(path, s))
+	if err != nil || len(files) == 0 || len(files) > 1 {
+		return nil, err
+	}
+
+	return files[0], nil
 
 }
 
@@ -35,11 +51,22 @@ func run(w *worker) (Files, error) {
 		return nil, fmt.Errorf("StartingPath is inaccessible: %s", w.RootPath)
 	}
 
-	if !w.hasEntries() {
-		return nil, fmt.Errorf("StartingPath has no non-directory entries: %s", w.RootPath)
+	if !w.single {
+		if !w.hasEntries() {
+			return nil, fmt.Errorf("StartingPath has no non-directory entries: %s", w.RootPath)
+		}
 	}
 
 	files := Files{}
+
+	if w.single {
+
+		file := newFileObj(w.RootPath, w.setter)
+		files = append(files, file)
+
+		return files, nil
+
+	}
 
 	dirents, err := os.ReadDir(w.RootPath)
 	if err != nil {
