@@ -1,6 +1,6 @@
 # Objectify
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/orme292/objectify.svg)](https://pkg.go.dev/github.com/orme292/objectify)
+[![Go Reference](https://pkg.go.dev/badge/github.com/orme292/objectify.svg)](https://pkg.go.dev/github.com/orme292/objectify@v0.2.0)
 
 Objectify is a Go package that reads a directory's entries and returns a slice of structs which contain information
 about each directory entry like size, file mode, the symlink target, and checksums.
@@ -13,7 +13,7 @@ go get github.com/orme292/objectify
 
 ```go
 import (
-    objf "github.com/orme292/objectify"
+    objf "github.com/orme292/objectify@v0.2.0"
 )
 ```
 
@@ -48,28 +48,37 @@ You can also have a Sets object returned by using a builder function:
 
 ### Call Objectify
 
-You can call objectify by using the `Objectify()` function. `Objectify()` will return a
-`Files` struct and an error, if there is one.
+You can call objectify by using the `Path()` or `File()` functions. 
 
+`Path()` will walk a directory and return a `Files` slice and an error, if there is one:
 ```go
-files, err := objf.Objectify("/root/path", objf.SetsAll())
+files, err := objf.Path("/root/path", objf.SetsAll())
 ```
+
+`File()` will process a single file and return a `FileObj` struct and an error, if there is one:
+```go
+file, err := objf.File("/root/path/myfile.txt", objf.SetsNone())
+```
+
+Create your own `Sets` for more configuration:
 ```go
 setter := objf.Sets{
     Size: true,
     Modes: true,
     LinkTarget: true,
 }
-files, err := objf.Objectify("/root/path", setter)
+files, err := objf.Path("/root/path", setter)
 ```
 
 ### The *Files* & *FileObj* Types
 
-`Objectify` returns a `Files` slice. The `Files` slice is made of `FileObj` structs.
+`Path()` returns a `Files` slice. The `Files` slice is made of `FileObj` structs.
+`File()` returns a `FileObj` struct.
 
 ```go
 type Files []*FileObj
-
+```
+```go
 type FileObj struct {
     UpdatedAt time.Time
 
@@ -92,7 +101,7 @@ type FileObj struct {
     IsReadable bool
     IsExists   bool
 
-Sets *Sets
+    Sets *Sets
 }
 ```
 
@@ -122,7 +131,7 @@ import (
 
 func main() {
 
-    files, err := objf.Objectify("/root/dir", objf.SetsAll())
+    files, err := objf.Path("/root/dir", objf.SetsAll())
     if err != nil {
         fmt.Printf("Error occurred: %s", err.Error())
         os.Exit(1)
