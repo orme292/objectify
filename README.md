@@ -8,12 +8,12 @@ about each directory entry like size, file mode, the symlink target, and checksu
 ## Import this Module
 
 ```shell
-go get github.com/orme292/objectify
+go get github.com/orme292/objectify@v0.2.0
 ```
 
 ```go
 import (
-    objf "github.com/orme292/objectify@v0.2.0"
+    objf "github.com/orme292/objectify"
 )
 ```
 
@@ -23,7 +23,7 @@ Objectify can be called by passing a path and a Sets struct.
 
 ### Sets
 
-The Sets struct tells Objectify which fields will be populated for each directory entry.
+The Sets struct tells Objectify which fields should be populated for each directory entry.
 
 ```go
 func main() {
@@ -117,7 +117,7 @@ type FileObj struct {
 
 ## Example
 
-Here's a full example on how to use Objectify. 
+Here's an example of basic Objectify usage:
 
 ```go
 package main
