@@ -2,21 +2,23 @@ package objectify
 
 // Sets fields are flags for FileObj fields which can be optionally populated.
 type Sets struct {
-	Size           bool
-	Modes          bool
-	ChecksumMD5    bool
-	ChecksumSHA256 bool
-	LinkTarget     bool
+	Size            bool
+	Modes           bool
+	ChecksumMD5     bool
+	ChecksumSHA256  bool
+	LinkTarget      bool
+	LinkTargetFinal bool
 }
 
 // SetsAll returns a Sets object with all fields set to true.
 func SetsAll() Sets {
 	return Sets{
-		Size:           true,
-		Modes:          true,
-		ChecksumMD5:    true,
-		ChecksumSHA256: true,
-		LinkTarget:     true,
+		Size:            true,
+		Modes:           true,
+		ChecksumMD5:     true,
+		ChecksumSHA256:  true,
+		LinkTarget:      true,
+		LinkTargetFinal: true,
 	}
 }
 
