@@ -9,14 +9,16 @@ import (
 
 func main() {
 
-	log.Println("Starting: /Users/aorme/github/objectify/cmd/test/testdir")
-	files, err := objf.Path("/Users/aorme/github/objectify/cmd/test/testdir", objf.SetsAll())
+	path := "/Users/aorme/github/objectify/cmd/test/testdir"
+	log.Println("Starting: ", path)
+	files, err := objf.Path(path, objf.SetsAll())
 	if err != nil {
 		log.Printf("%v", err)
 	}
 
-	log.Println("Starting: /Users/aorme/github/objectify/cmd/test/testdir/testsubdir")
-	files, err = objf.Path("/Users/aorme/github/objectify/cmd/test/testdir/testsubdir", objf.SetsAll())
+	path = "/Users/aorme/github/objectify/cmd/test/testdir/testsubdir"
+	log.Println("Starting: ", path)
+	files, err = objf.Path(path, objf.SetsAll())
 	if err != nil {
 		log.Printf("%v", err)
 	}
@@ -25,8 +27,9 @@ func main() {
 		file.DebugOut()
 	}
 
-	log.Println("Starting: /Users/aorme/github/objectify/cmd/test/testdir/testsubdir/file1")
-	file, err := objf.File("/Users/aorme/github/objectify/cmd/test/testdir/testsubdir/file1", objf.SetsAll())
+	path = "/Users/aorme/github/objectify/cmd/test/testdir/testsubdir/file1"
+	log.Println("Starting: ", path)
+	file, err := objf.File(path, objf.SetsAll())
 	if err != nil || file == nil {
 		log.Printf("%v", err)
 	} else {
