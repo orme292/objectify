@@ -3,7 +3,6 @@ package objectify
 import (
 	"fmt"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"time"
 )
@@ -36,11 +35,12 @@ type FileObj struct {
 
 	// Mode is the entMode of the directory entry.
 	// modeFS is returned from os.Lstat
-	Mode   entMode
-	modeFS fs.FileInfo
+	Mode entMode
+	info fs.FileInfo
 
 	// Target will be populated with a symlinks target path.
-	Target string
+	Target      string
+	TargetFinal string
 
 	IsLink     bool
 	IsReadable bool
@@ -80,13 +80,7 @@ func newFileObj(path string, s Sets) *FileObj {
 		Set:      &s,
 	}
 
-	if fo.setExists() && fo.setReadable() {
-
-		fo.Update()
-
-	}
-
-	fo.timestamp()
+	_ = fo.update()
 
 	return fo
 
@@ -134,40 +128,20 @@ func (fo *FileObj) setChecksums() error {
 
 }
 
-// setExists checks if the FileObj exists by checking the existence of the
-// file in the specified Root and Filename. It sets the IsExists field of
-// the FileObj accordingly. Returns the value of IsExists.
-func (fo *FileObj) setExists() bool {
-
-	if fo.hasPaths() {
-
-		_, err := os.Lstat(filepath.Join(fo.Root, fo.Filename))
-		if err != nil {
-			fo.IsExists = false
-		} else {
-			fo.IsExists = true
-		}
-
-	}
-
-	return fo.IsExists
-
-}
-
-// setModeAndFileInfo updates the Mode, modeFS, modTime, and IsLink fields of the FileObj
+// setEntMode updates the Mode, info, modTime, and IsLink fields of the FileObj
 // based on the values of IsExists, IsReadable, and Sets.Modes.
 // If IsExists is true and IsReadable is true, it sets the Mode field by calling getEntMode
-// and assigns the returned value to both the Mode and modeFS fields.
-// It also updates the modTime field by retrieving the modification time from modeFS.
+// and assigns the returned value to both the Mode and info fields.
+// It also updates the modTime field by retrieving the modification time from info.
 // If Sets.Modes is true and Mode is entModeLink, it sets the IsLink field to true.
 // Returns the value of the Mode field.
-func (fo *FileObj) setModeAndFileInfo() entMode {
+func (fo *FileObj) setEntMode() entMode {
 
 	if fo.IsExists && fo.IsReadable {
 
 		if fo.Set.Modes {
-			fo.Mode, fo.modeFS = getEntMode(fo.FullPath())
-			fo.modTime = fo.modeFS.ModTime()
+			fo.Mode = getEntModeWithInfo(fo.info.Mode())
+			fo.modTime = fo.info.ModTime()
 		}
 
 		if fo.Set.Modes && (fo.Mode == entModeLink) {
@@ -177,6 +151,40 @@ func (fo *FileObj) setModeAndFileInfo() entMode {
 	}
 
 	return fo.Mode
+
+}
+
+// setPrelims updates preliminary information about the FileObj instance.
+// It sets the info field with the return value of attemptStat method, and
+// updates the IsExists and IsReadable fields based on the presence and
+// readability of the file.
+// Returns true if the FileObj has valid paths, the file exists and is readable,
+// otherwise returns false.
+func (fo *FileObj) setPrelims() bool {
+
+	var ok bool
+
+	if fo.hasPaths() {
+
+		fo.info, ok = attemptStat(fo.FullPath())
+		if !ok {
+			fo.IsExists = false
+			fo.IsReadable = false
+		}
+
+		if isReadable(fo.FullPath()) {
+			fo.IsExists = true
+			fo.IsReadable = true
+		}
+
+	} else {
+
+		fo.IsExists = false
+		fo.IsReadable = false
+
+	}
+
+	return fo.IsExists && fo.IsReadable
 
 }
 
@@ -199,49 +207,42 @@ func (fo *FileObj) setSize() {
 
 	if fo.Set.Size {
 
-		info := fo.modeFS
-
-		if info == nil {
-			fo.modeFS, _ = attemptStat(fo.FullPath())
+		if fo.info == nil {
+			fo.info, _ = attemptStat(fo.FullPath())
 		}
 
-		if info == nil {
+		if fo.info == nil {
 			fo.SizeBytes = 0
 			return
 		}
 
-		fo.SizeBytes = info.Size()
+		fo.SizeBytes = fo.info.Size()
 
 	}
 
 }
 
-// setTarget returns the target of the FileObj if Sets.LinkTarget is true
-// and the file exists and is readable. If Sets.Modes is true, it checks
-// the Mode field. Otherwise, it retrieves the Mode from getEntMode. If the
-// Mode is entModeLink, it calls getsFinalTarget to retrieve the final target
-// and assigns it to the Target field. Returns the Target field.
-func (fo *FileObj) setTarget() string {
+func (fo *FileObj) setTargets() {
 
-	if fo.IsExists && fo.IsReadable {
+	if fo.IsExists && fo.IsReadable && fo.IsLink {
 
-		if fo.Set.LinkTarget {
+		if fo.Set.LinkTarget || fo.Set.LinkTargetFinal {
 
-			var mode entMode
-			if fo.Set.Modes {
-				mode = fo.Mode
-			} else {
-				mode, _ = getEntMode(fo.FullPath())
-			}
-			if mode == entModeLink {
-				fo.Target, _ = getsFinalTarget(fo.FullPath())
+			if !fo.Set.Modes {
+				fo.Mode, fo.info = getEntMode(fo.FullPath())
 			}
 
 		}
 
-	}
+		if fo.Set.LinkTarget {
+			fo.Target, _ = getsTarget(fo.FullPath())
+		}
 
-	return fo.Target
+		if fo.Set.LinkTargetFinal {
+			fo.TargetFinal, _ = getsFinalTarget(fo.FullPath(), fo.info)
+		}
+
+	}
 
 }
 
@@ -255,23 +256,27 @@ func (fo *FileObj) timestamp() time.Time {
 }
 
 // update updates the FileObj by performing the following actions:
-// - Calls setModeAndFileInfo to update the Mode, modeFS, modTime, and IsLink fields
-// - Calls setSize to update the SizeBytes field based on the file size
-// - Calls setTarget to update the Target field if Sets.LinkTarget is true
-// - Calls setChecksums to update the checksums (SHA256 and MD5) if file exists and is readable
-// - Calls timestamp to update the UpdatedAt field to the current time
-// Returns nil.
+//   - If setPrelims (which sets info, checks exists and readability) passes, then:
+//   - Calls setEntMode to update the Mode, modTime, and IsLink fields
+//   - Calls setSize to update the SizeBytes field based on the file size
+//   - Calls setTargets to update the Target and/or TargetFinal fields if
+//     Sets.LinkTarget/Sets.LinkTargetFinal is true
+//   - Calls setChecksums to update the checksums (SHA256 and MD5) if file exists and
+//     is readable
+//   - Calls timestamp to update the UpdatedAt field to the current time
+//
+// Returns nil (for now).
 func (fo *FileObj) update() error {
 
-	_ = fo.setModeAndFileInfo()
+	if fo.setPrelims() {
 
-	fo.setSize()
+		_ = fo.setEntMode()
+		fo.setSize()
+		fo.setTargets()
+		_ = fo.setChecksums()
+		fo.timestamp()
 
-	_ = fo.setTarget()
-
-	_ = fo.setChecksums()
-
-	_ = fo.timestamp()
+	}
 
 	return nil
 
@@ -293,11 +298,11 @@ func (fo *FileObj) ChangeSets(s Sets) {
 //   - F_CHECKSUM_SHA256: Changes the sets to enable checksum SHA256 calculation
 //     and calls the setChecksums() method.
 //   - F_MODES: Changes the sets to enable mode and file info retrieval and calls
-//     the setModeAndFileInfo() method.
+//     the setEntMode() method.
 //   - F_SIZE: Changes the sets to enable size calculation and calls the setSize()
 //     method.
 //   - F_LINKTARGET: Changes the sets to enable link target retrieval and calls
-//     the setTarget() method.
+//     the setTargets() method.
 func (fo *FileObj) Force(a Action) {
 
 	originalSets := fo.Set
@@ -316,7 +321,7 @@ func (fo *FileObj) Force(a Action) {
 	case F_MODES:
 
 		fo.ChangeSets(Sets{Modes: true})
-		_ = fo.setModeAndFileInfo()
+		_ = fo.setEntMode()
 
 	case F_SIZE:
 
@@ -326,7 +331,7 @@ func (fo *FileObj) Force(a Action) {
 	case F_LINKTARGET:
 
 		fo.ChangeSets(Sets{LinkTarget: true})
-		_ = fo.setTarget()
+		fo.setTargets()
 
 	}
 
@@ -357,6 +362,7 @@ func (fo *FileObj) HasChanged() bool {
 	}
 
 	return false
+
 }
 
 // SecondsSinceUpdatedAt returns the number of seconds since the UpdatedAt time of
@@ -377,7 +383,7 @@ func (fo *FileObj) SizeString() string {
 // is after the last update time, Update calls update.
 func (fo *FileObj) Update() *FileObj {
 
-	if fo.HasChanged() && fo.setExists() && fo.setReadable() {
+	if fo.HasChanged() {
 
 		_ = fo.update()
 

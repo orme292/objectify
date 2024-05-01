@@ -134,14 +134,29 @@ func getMD5(path string) ([]byte, string, error) {
 
 }
 
-// getsFinalTarget returns the final target of the symlink at the specified path.
-// It resolves the link recursively until it reaches a non-symbolic entry. If the
-// path does not exist or encounters an error, it returns an empty string and false.
-// If the final target leads to a directory, it returns an empty string and False.
-func getsFinalTarget(path string) (string, bool) {
+// getsTarget returns the target of a symbolic link at the specified path
+// and a bool indicating if the retrieval was successful.
+func getsTarget(path string) (string, bool) {
 
-	info, ok := attemptStat(path)
-	if !ok {
+	target, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return target, false
+	}
+
+	return target, true
+
+}
+
+// getsFinalTarget returns the final target of a symbolic link and a bool
+// indicating if the operation is successful. It takes the path of the symlink
+// and the fs.FileInfo of the symlink itself. If the fs.FileInfo is nil, it will
+// return an empty string and false. If the symlink is a directory, it will return
+// an empty string and false. If the symlink points to another symlink, it will
+// recursively evaluate the target until it reaches the final target. If any error
+// occurs during evaluation, it will return an empty string and false.
+func getsFinalTarget(path string, info fs.FileInfo) (string, bool) {
+
+	if info == nil {
 		return EMPTY, false
 	}
 
@@ -152,7 +167,9 @@ func getsFinalTarget(path string) (string, bool) {
 			return EMPTY, false
 		}
 
-		return getsFinalTarget(target)
+		info, _ := attemptStat(target)
+
+		return getsFinalTarget(target, info)
 
 	}
 
@@ -164,6 +181,10 @@ func getsFinalTarget(path string) (string, bool) {
 
 }
 
+// isFile checks if the specified path corresponds to a file. It uses the
+// attemptStat function to get the fs.FileInfo of the path, and then returns
+// true if the info is not nil and represents a non-directory file. Otherwise,
+// it returns false.
 func isFile(path string) bool {
 
 	info, _ := attemptStat(path)
@@ -177,10 +198,6 @@ func isFile(path string) bool {
 // the attemptOpen function. If both operations are successful, it returns true,
 // indicating that the file is readable. Otherwise, it returns false.
 func isReadable(path string) bool {
-
-	if _, ok := attemptStat(path); ok != true {
-		return false
-	}
 
 	return attemptOpen(path)
 
@@ -235,10 +252,10 @@ func pathBaseSplit(path string) (dir, file string) {
 
 }
 
-// pathAbsUnsafe returns the absolute path of the file at the specified
+// pathAbsSafe returns the absolute path of the file at the specified
 // path using filepath.Abs. If an error occurs during the operation, it
 // returns the path joined with the root directory ("/").
-func pathAbsUnsafe(path string) string {
+func pathAbsSafe(path string) string {
 
 	abs, err := filepath.Abs(path)
 	if err != nil {
