@@ -6,45 +6,45 @@ import (
 
 // worker represents a worker that performs operations on files and directories.
 type worker struct {
-	RootPath string
-	single   bool
-	setter   Sets
+	RootPath       string
+	singleFileMode bool
+	setter         Sets
 }
 
 // newPathWorker creates a new instance of the worker struct with the provided startPath and Sets.
 // It returns a pointer to the worker.
 func newPathWorker(startPath string, s Sets) *worker {
 	return &worker{
-		RootPath: startPath,
-		single:   false,
-		setter:   s,
+		RootPath:       startPath,
+		singleFileMode: false,
+		setter:         s,
 	}
 }
 
 func newFileWorker(path string, s Sets) *worker {
 	return &worker{
-		RootPath: path,
-		single:   true,
-		setter:   s,
+		RootPath:       path,
+		singleFileMode: true,
+		setter:         s,
 	}
 }
 
-// validate checks if the RootPath field of the worker struct is empty.
-// If it is empty, it returns false. Otherwise, it calls the isReadable
-// function passing the absolute path of the RootPath as an argument.
-// If the isReadable function returns true, indicating that the file is
-// readable, validate returns true. Otherwise, it returns false.
+// validate checks if the worker's RootPath is non-empty.
+// If it is empty, it returns false.
+// If the worker is in "single" file mode, it checks if the RootPath
+// points to a file. If so, it returns true.
+// Otherwise, it returns true.
 func (w *worker) validate() bool {
 
 	if w.RootPath == EMPTY {
 		return false
 	}
 
-	if w.single {
-		return isFile(w.RootPath) && isReadable(pathAbsUnsafe(w.RootPath))
-	} else {
-		return isReadable(pathAbsUnsafe(w.RootPath))
+	if w.singleFileMode {
+		return isFile(w.RootPath)
 	}
+
+	return true
 
 }
 
