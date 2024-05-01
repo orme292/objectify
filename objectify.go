@@ -47,11 +47,14 @@ func File(path string, s Sets) (file *FileObj, err error) {
 // Finally, it returns the files slice and any error that occurred during the process.
 func run(w *worker) (Files, error) {
 
+	// validate checks if there is a valid path provided.
 	if !w.validate() {
-		return nil, fmt.Errorf("StartingPath is inaccessible: %s", w.RootPath)
+		return nil, fmt.Errorf("StartingPath is not correct: %s", w.RootPath)
 	}
 
-	if !w.single {
+	// checks to see that the provided path contains actual file entries.
+	// may be removed in the future.
+	if !w.singleFileMode {
 		if !w.hasEntries() {
 			return nil, fmt.Errorf("StartingPath has no non-directory entries: %s", w.RootPath)
 		}
@@ -59,7 +62,7 @@ func run(w *worker) (Files, error) {
 
 	files := Files{}
 
-	if w.single {
+	if w.singleFileMode {
 
 		file := newFileObj(w.RootPath, w.setter)
 		files = append(files, file)
@@ -92,4 +95,5 @@ func run(w *worker) (Files, error) {
 	}
 
 	return files, err
+
 }

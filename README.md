@@ -34,6 +34,7 @@ setter := objf.Sets{
         ChecksumMD5: true,
         ChecksumSHA256: true,
         LinkTarget: true,
+        LinkTargetFinal: true,
     }
 
 }
@@ -66,6 +67,7 @@ setter := objf.Sets{
     Size: true,
     Modes: true,
     LinkTarget: true,
+    LinkTargetFinal: true,
 }
 files, err := objf.Path("/root/path", setter)
 ```
@@ -93,9 +95,10 @@ type FileObj struct {
     SHA256         []byte
 
     Mode   entMode
-    ModeFS fs.FileMode
+    info   fs.FileMode
 
-    Target string
+    Target      string
+    TargetFinal string
 
     IsLink     bool
     IsReadable bool
