@@ -8,7 +8,7 @@ about each directory entry like size, file mode, the symlink target, and checksu
 ## Import this Module
 
 ```shell
-go get github.com/orme292/objectify@v0.2.0
+go get github.com/orme292/objectify@latest
 ```
 
 ```go
