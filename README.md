@@ -1,6 +1,6 @@
 # Objectify
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/orme292/objectify.svg)](https://pkg.go.dev/github.com/orme292/objectify@v0.3.1)
+[![Go Reference](https://pkg.go.dev/badge/github.com/orme292/objectify.svg)](https://pkg.go.dev/github.com/orme292/objectify)
 
 Objectify is a Go package that reads a directory's entries and returns a slice of structs which contain information
 about each directory entry like size, file mode, the symlink target, and checksums.
@@ -94,7 +94,7 @@ type FileObj struct {
     ChecksumSHA256 string
     SHA256         []byte
 
-    Mode   entMode
+    Mode   EntMode
     info   fs.FileMode
 
     Target      string

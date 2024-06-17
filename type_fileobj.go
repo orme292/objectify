@@ -33,9 +33,9 @@ type FileObj struct {
 	ChecksumSHA256 string
 	SHA256         []byte
 
-	// Mode is the entMode of the directory entry.
+	// Mode is the EntMode of the directory entry.
 	// modeFS is returned from os.Lstat
-	Mode entMode
+	Mode EntMode
 	info fs.FileInfo
 
 	// Target will be populated with a symlinks target path.
@@ -133,9 +133,9 @@ func (fo *FileObj) setChecksums() error {
 // If IsExists is true and IsReadable is true, it sets the Mode field by calling getEntMode
 // and assigns the returned value to both the Mode and info fields.
 // It also updates the modTime field by retrieving the modification time from info.
-// If Sets.Modes is true and Mode is entModeLink, it sets the IsLink field to true.
+// If Sets.Modes is true and Mode is EntModeLink, it sets the IsLink field to true.
 // Returns the value of the Mode field.
-func (fo *FileObj) setEntMode() entMode {
+func (fo *FileObj) setEntMode() EntMode {
 
 	if fo.IsExists && fo.IsReadable {
 
@@ -144,7 +144,7 @@ func (fo *FileObj) setEntMode() entMode {
 			fo.modTime = fo.info.ModTime()
 		}
 
-		if fo.Set.Modes && (fo.Mode == entModeLink) {
+		if fo.Set.Modes && (fo.Mode == EntModeLink) {
 			fo.IsLink = true
 		}
 
