@@ -94,7 +94,7 @@ type FileObj struct {
     ChecksumSHA256 string
     SHA256         []byte
 
-    Mode   entMode
+    Mode   EntMode
     info   fs.FileMode
 
     Target      string

@@ -5,73 +5,73 @@ import (
 	"os"
 )
 
-// entMode is a simplified representation of fs.FileInfo.
-type entMode string
+// EntMode is a simplified representation of fs.FileInfo.
+type EntMode string
 
 var (
-	entModeDir       entMode = "dir"
-	entModeLink      entMode = "link"
-	entModeRegular   entMode = "regular_file"
-	entModeTemp      entMode = "temp_file"
-	entModePipe      entMode = "fifo_pipe"
-	entModeSocket    entMode = "unix_socket"
-	entModeDevice    entMode = "device_file"
-	entModeIrregular entMode = "irregular_file"
-	entModeOther     entMode = "other"
-	entModeErrored   entMode = "unknown"
+	EntModeDir       EntMode = "dir"
+	EntModeLink      EntMode = "link"
+	EntModeRegular   EntMode = "regular_file"
+	EntModeTemp      EntMode = "temp_file"
+	EntModePipe      EntMode = "fifo_pipe"
+	EntModeSocket    EntMode = "unix_socket"
+	EntModeDevice    EntMode = "device_file"
+	EntModeIrregular EntMode = "irregular_file"
+	EntModeOther     EntMode = "other"
+	EntModeErrored   EntMode = "unknown"
 )
 
-// String returns the string representation of the entMode.
-func (e entMode) String() string {
+// String returns the string representation of the EntMode.
+func (e EntMode) String() string {
 	return string(e)
 }
 
-// getEntMode returns the entMode and fs.FileInfo for the given path.
+// getEntMode returns the EntMode and fs.FileInfo for the given path.
 // If there is an error in retrieving fs.FileInfo, the function returns
-// entModeErrored and nil.
-func getEntMode(path string) (entMode, fs.FileInfo) {
+// EntModeErrored and nil.
+func getEntMode(path string) (EntMode, fs.FileInfo) {
 
 	info, err := os.Lstat(path)
 	if err != nil {
-		return entModeErrored, nil
+		return EntModeErrored, nil
 	}
 	return getEntModeWithInfo(info.Mode()), info
 
 }
 
-// getEntModeWithInfo returns the entMode based on the given fs.FileMode.
+// getEntModeWithInfo returns the EntMode based on the given fs.FileMode.
 // It checks the various flags of fs.FileMode and returns the corresponding
-// entMode value. If none of the flags match, it returns entModeOther.
+// EntMode value. If none of the flags match, it returns EntModeOther.
 // The flags checked are os.ModeDir, os.ModeType, os.ModeSymlink,
 // os.ModeTemporary, os.ModeNamedPipe, os.ModeSocket, os.ModeDevice,
 // and os.ModeIrregular.
-func getEntModeWithInfo(info fs.FileMode) entMode {
+func getEntModeWithInfo(info fs.FileMode) EntMode {
 
 	if info&os.ModeDir != 0 {
-		return entModeDir
+		return EntModeDir
 	}
 	if info&os.ModeType == 0 {
-		return entModeRegular
+		return EntModeRegular
 	}
 	if info&os.ModeSymlink != 0 {
-		return entModeLink
+		return EntModeLink
 	}
 	if info&os.ModeTemporary != 0 {
-		return entModeTemp
+		return EntModeTemp
 	}
 	if info&os.ModeNamedPipe != 0 {
-		return entModePipe
+		return EntModePipe
 	}
 	if info&os.ModeSocket != 0 {
-		return entModeSocket
+		return EntModeSocket
 	}
 	if info&os.ModeDevice != 0 {
-		return entModeDevice
+		return EntModeDevice
 	}
 	if info&os.ModeIrregular != 0 {
-		return entModeIrregular
+		return EntModeIrregular
 	}
 
-	return entModeOther
+	return EntModeOther
 
 }
